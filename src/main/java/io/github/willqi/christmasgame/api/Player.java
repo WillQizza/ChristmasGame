@@ -1,5 +1,7 @@
 package io.github.willqi.christmasgame.api;
 
+import io.javalin.websocket.WsContext;
+
 public interface Player {
 
     int getColorType ();
@@ -8,12 +10,18 @@ public interface Player {
 
     GameServer getServer ();
 
+    WsContext getWebSocketContext ();
+
     String getName ();
 
     float getX ();
 
     float getY ();
 
-    void sendPacket ();
+    void setX (float x);
+
+    void setY (float y);
+
+    void sendPacket (GamePacket packet);
 
 }

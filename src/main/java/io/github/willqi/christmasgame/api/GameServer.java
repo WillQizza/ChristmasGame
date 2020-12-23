@@ -1,6 +1,6 @@
 package io.github.willqi.christmasgame.api;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface GameServer {
 
@@ -8,7 +8,7 @@ public interface GameServer {
 
     void removePlayer (Player player);
 
-    List<Player> getPlayers ();
+    Collection<Player> getPlayers ();
 
     GameMap getGameMap ();
 
