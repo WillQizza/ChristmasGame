@@ -25,6 +25,20 @@ public class EndGamePacket implements GamePacket {
     public static class LeaderboardEntryData {
         private int score;
         private int playerId;
+
+        public LeaderboardEntryData (int pId, int s) {
+            playerId = pId;
+            score = s;
+        }
+
+        public int getScore () {
+            return score;
+        }
+
+        public int getPlayerId () {
+            return playerId;
+        }
+
     }
 
 }
