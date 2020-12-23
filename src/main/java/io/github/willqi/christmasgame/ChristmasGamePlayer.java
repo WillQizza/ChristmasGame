@@ -19,11 +19,11 @@ public class ChristmasGamePlayer implements Player {
     private float x;
     private float y;
 
-    public ChristmasGamePlayer (GameServer server, WsContext context, String name, int colorType) {
-        this.context = context;
-        this.server = server;
-        this.name = name;
-        this.colorType = colorType;
+    public ChristmasGamePlayer (GameServer playerServer, WsContext playerContext, String playerName, int playerColorType) {
+        context = playerContext;
+        server = playerServer;
+        name = playerName;
+        colorType = playerColorType;
 
         id = PLAYER_ID++;
     }
@@ -64,13 +64,13 @@ public class ChristmasGamePlayer implements Player {
     }
 
     @Override
-    public void setX(float x) {
-        this.x = x;
+    public void setX(float newX) {
+        x = newX;
     }
 
     @Override
-    public void setY(float y) {
-        this.y = y;
+    public void setY(float newY) {
+        y = newY;
     }
 
     @Override
