@@ -61,12 +61,13 @@ public class ChristmasGameServer implements GameServer {
 
         for (Player player : getPlayers()) {
 
-            if (!player.isSpectator()) {
+            if (!player.isSpectator() && ((ChristmasGamePlayer)player).isPositionUpdated()) {
 
                 PlayerMovePacket playerMovePacket = new PlayerMovePacket();
                 playerMovePacket.setPlayerId(player.getId());
                 playerMovePacket.setX(player.getX());
                 playerMovePacket.setY(player.getY());
+                ((ChristmasGamePlayer)player).setPositionUpdated(false);
 
                 for (Player otherPlayer : getPlayers()) {
                     if (otherPlayer != player) {
@@ -88,13 +89,14 @@ public class ChristmasGameServer implements GameServer {
             public void run() {
                 update();
             }
-        }, 0, 10);
+        }, 0, 2);
     }
 
     public void startServer (int port) {
         if (serverStarted) {
             throw new IllegalStateException("The server has already been started.");
         }
+        startGame();
         serverStarted = true;
 
         Javalin server = Javalin.create(conf -> conf.addStaticFiles("/public"));
@@ -108,7 +110,7 @@ public class ChristmasGameServer implements GameServer {
             client.onClose(connection -> {
                 logger.info(String.format("Connection closed: %s", connection.getSessionId()));
                 for (Player player : getPlayers()) {
-                    if (player.getWebSocketContext() == connection) {
+                    if (player.getWebSocketContext().getSessionId() == connection.getSessionId()) {
                         removePlayer(player);
                         break;
                     }
@@ -133,10 +135,24 @@ public class ChristmasGameServer implements GameServer {
                     // construct player object
                     LoginPacket loginPacket = (LoginPacket)response.getPacket();
                     Player player = new ChristmasGamePlayer(this, messageCtx, loginPacket.getName(), loginPacket.getColorType());
+
+                    // TODO: This should probably be sent after the start game packet when that gets implemented
+                    for (Player otherPlayer : getPlayers()) {
+                        AddPlayerPacket addPlayerPacket = new AddPlayerPacket();
+                        addPlayerPacket.setPlayerId(otherPlayer.getId());
+                        addPlayerPacket.setX(otherPlayer.getX());
+                        addPlayerPacket.setY(otherPlayer.getY());
+                        addPlayerPacket.setName(otherPlayer.getName());
+                        addPlayerPacket.setColorType(otherPlayer.getColorType());
+                        player.sendPacket(addPlayerPacket);
+                    }
+
                     addPlayer(player);
 
                     GamemodePacket gamemodePacket = new GamemodePacket();
-                    gamemodePacket.setGamemode(Utility.GAMEMODE_PLAYER);    // TODO: If player count == 0, change to spec gamemode
+                    gamemodePacket.setGamemode(Utility.GAMEMODE_SPECTATOR);
+                    //gamemodePacket.setGamemode(getPlayers().size() == 0 ? Utility.GAMEMODE_SPECTATOR : Utility.GAMEMODE_PLAYER);
+                    player.sendPacket(gamemodePacket);
 
                     MapPacket mapPacket = new MapPacket(); // TODO
                     player.sendPacket(mapPacket);
@@ -145,7 +161,7 @@ public class ChristmasGameServer implements GameServer {
                 }
                 Player foundPlayer = null;
                 for (Player p : getPlayers()) {
-                    if (p.getWebSocketContext() == messageCtx) {
+                    if (p.getWebSocketContext().getSessionId() == messageCtx.getSessionId()) {
                         foundPlayer = p;
                         break;
                     }
@@ -159,6 +175,7 @@ public class ChristmasGameServer implements GameServer {
                 switch (response.getId()) {
                     case PacketTypes.START_GAME_PACKET:
                         if (!gameStarted) {
+                            // TODO: use this packet instead of automatically starting the game.
                             gameStarted = true;
                             startGame();
                             StartGamePacket startGamePacket = new StartGamePacket();
@@ -171,6 +188,7 @@ public class ChristmasGameServer implements GameServer {
                         PlayerMovePacket playerMovePacket = (PlayerMovePacket)response.getPacket();
                         player.setX(playerMovePacket.getX());
                         player.setY(playerMovePacket.getY());
+                        ((ChristmasGamePlayer)player).setPositionUpdated(true);
 
                         if (player.getY() < 0 && player.isAlive()) {    // TODO: get actual y
                             player.setAlive(false);

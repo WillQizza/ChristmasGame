@@ -22,6 +22,8 @@ public class ChristmasGamePlayer implements Player {
     private boolean alive = true;
     private boolean spectator = false;
 
+    private boolean positionUpdated = true;
+
     public ChristmasGamePlayer (GameServer playerServer, WsContext playerContext, String playerName, int playerColorType) {
         context = playerContext;
         server = playerServer;
@@ -71,6 +73,10 @@ public class ChristmasGamePlayer implements Player {
         return alive;
     }
 
+    public boolean isPositionUpdated () {
+        return positionUpdated;
+    }
+
     @Override
     public boolean isSpectator() {
         return spectator;
@@ -94,6 +100,10 @@ public class ChristmasGamePlayer implements Player {
         alive = status;
     }
 
+    public void setPositionUpdated (boolean status) {
+        positionUpdated = status;
+    }
+
     @Override
     public void setSpectator(boolean status) {
         spectator = status;
@@ -102,11 +112,13 @@ public class ChristmasGamePlayer implements Player {
     @Override
     public void setX(float newX) {
         x = newX;
+        setPositionUpdated(true);
     }
 
     @Override
     public void setY(float newY) {
         y = newY;
+        setPositionUpdated(true);
     }
 
     @Override

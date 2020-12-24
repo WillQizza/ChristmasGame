@@ -2,6 +2,8 @@
 
 const game = {
 
+    ready: false,
+
     players: new Map(),
 
     onload: function () {
@@ -39,21 +41,24 @@ const game = {
 game.socket = new WebSocket(`ws://${window.location.hostname}:${window.location.port || '80'}/game`);
 
 game.socket.onopen = () => {
-    game.socket.send(JSON.stringify({
-        id: 0,
-        packet: {
-            name: "TODO",
-            colorType: -1
-        }
-    }));
+
+    if (game.ready) {
+        game.socket.send(JSON.stringify({
+            id: 0,
+            packet: {
+                name: "TODO",
+                colorType: -1
+            }
+        }));
+    }
 };
 
 game.socket.onmessage = message => {
     const wrapper = JSON.parse(message.data);
     switch (wrapper.id) {
-        case 3:
-            game.players.get(wrapper.packet.playerId).entity.pos.x = wrapper.packet.x;
-            game.players.get(wrapper.packet.playerId).entity.pos.y = wrapper.packet.y;
+        case 1:
+            game.players.get(wrapper.packet.playerId).x = wrapper.packet.x;
+            game.players.get(wrapper.packet.playerId).y = wrapper.packet.y;
         break;
         case 4:
             const newPlayer = me.pool.pull('playerEntity', wrapper.packet.x, wrapper.packet.y, {
@@ -74,6 +79,18 @@ game.socket.onmessage = message => {
 game.PlayScreen = me.Stage.extend({
 
     onResetEvent: function () {
+
+        if (game.socket.readyState === WebSocket.OPEN) {
+            game.socket.send(JSON.stringify({
+                    id: 0,
+                    packet: {
+                        name: "TODO",
+                        colorType: -1
+                    }
+            }));
+        }
+        game.ready = true;
+        
         me.levelDirector.loadLevel("main_map");
 
         const player = me.pool.pull('playerEntity', 700, 1500, {

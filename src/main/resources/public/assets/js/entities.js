@@ -6,7 +6,6 @@ game.PlayerEntity = me.Entity.extend({
         this.body.setMaxVelocity(12, 30);
         this.body.setFriction(0.4, 0);
 
-        me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH, 0.4);
         this.alwaysUpdate = true;
 
         this.renderable = game.animations.santa.createAnimationFromName([
@@ -14,6 +13,11 @@ game.PlayerEntity = me.Entity.extend({
         ]);
 
         this.playerId = settings.playerId;
+
+        if (this.playerId === null) {
+            me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH, 0.4);
+        }
+
 
         this.body.accel.x = this.body.maxVel.x;
 
@@ -50,7 +54,8 @@ game.PlayerEntity = me.Entity.extend({
 
         } else {
 
-            // TODO: just get player pos from map or smth
+            this.pos.x = game.players.get(this.playerId).x;
+            this.pos.y = game.players.get(this.playerId).y;
 
         }
         return (this._super(me.Entity, 'update', [dt]) || this.body.vel.x !== 0 || this.body.vel.y !== 0);
