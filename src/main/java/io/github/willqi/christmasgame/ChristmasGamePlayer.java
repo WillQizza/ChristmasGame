@@ -4,6 +4,7 @@ import io.github.willqi.christmasgame.api.GamePacket;
 import io.github.willqi.christmasgame.api.GameServer;
 import io.github.willqi.christmasgame.api.Player;
 import io.github.willqi.christmasgame.network.PacketWrapper;
+import io.github.willqi.christmasgame.network.packets.DeathPacket;
 import io.javalin.websocket.WsContext;
 
 public class ChristmasGamePlayer implements Player {
@@ -18,6 +19,8 @@ public class ChristmasGamePlayer implements Player {
 
     private float x;
     private float y;
+    private boolean alive = true;
+    private boolean spectator = false;
 
     public ChristmasGamePlayer (GameServer playerServer, WsContext playerContext, String playerName, int playerColorType) {
         context = playerContext;
@@ -64,6 +67,39 @@ public class ChristmasGamePlayer implements Player {
     }
 
     @Override
+    public boolean isAlive() {
+        return alive;
+    }
+
+    @Override
+    public boolean isSpectator() {
+        return spectator;
+    }
+
+    @Override
+    public void setAlive(boolean status) {
+        if (!alive && !status) {
+            // kill
+            DeathPacket packet = new DeathPacket();
+            sendPacket(packet);
+
+            DeathPacket notifierDeathPacket = new DeathPacket();
+            notifierDeathPacket.setPlayerId(getId());
+
+            for (Player p : getServer().getPlayers()) {
+                p.sendPacket(notifierDeathPacket);
+            }
+
+        }
+        alive = status;
+    }
+
+    @Override
+    public void setSpectator(boolean status) {
+        spectator = status;
+    }
+
+    @Override
     public void setX(float newX) {
         x = newX;
     }
@@ -76,6 +112,20 @@ public class ChristmasGamePlayer implements Player {
     @Override
     public void sendPacket(GamePacket packet) {
         context.send(Utility.GSON.toJson(new PacketWrapper(packet)));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Player) {
+            Player player = (Player)obj;
+            return player.getId() == getId();
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode () {
+        return id;
     }
 
 }

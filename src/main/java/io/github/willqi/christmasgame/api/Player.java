@@ -18,6 +18,14 @@ public interface Player {
 
     float getY ();
 
+    boolean isAlive ();
+
+    boolean isSpectator ();
+
+    void setAlive (boolean status);
+
+    void setSpectator (boolean status);
+
     void setX (float x);
 
     void setY (float y);

@@ -6,6 +6,7 @@ import io.github.willqi.christmasgame.api.GameServer;
 import io.github.willqi.christmasgame.api.Player;
 import io.github.willqi.christmasgame.network.PacketTypes;
 import io.github.willqi.christmasgame.network.PacketWrapper;
+import io.github.willqi.christmasgame.network.packets.*;
 import io.javalin.Javalin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,20 +17,33 @@ public class ChristmasGameServer implements GameServer {
 
     private final Collection<Player> players = new HashSet<>();
 
+    private Timer timer = new Timer();
+
     private boolean serverStarted;
-
-    public ChristmasGameServer () {
-
-    }
+    private boolean gameStarted;
 
     @Override
     public void addPlayer(Player player) {
-
+        AddPlayerPacket packet = new AddPlayerPacket();
+        packet.setPlayerId(player.getId());
+        packet.setColorType(player.getColorType());
+        packet.setName(player.getName());
+        packet.setX(0); // TODO
+        packet.setY(0); // TODO
+        for (Player p : getPlayers()) {
+            p.sendPacket(packet);
+        }
+        players.add(player);
     }
 
     @Override
     public void removePlayer(Player player) {
-
+        players.remove(player);
+        RemovePlayerPacket packet = new RemovePlayerPacket();
+        packet.setPlayerId(player.getId());
+        for (Player p : getPlayers()) {
+            p.sendPacket(packet);
+        }
     }
 
     @Override
@@ -45,11 +59,36 @@ public class ChristmasGameServer implements GameServer {
     @Override
     public void update() {
 
+        for (Player player : getPlayers()) {
+
+            if (!player.isSpectator()) {
+
+                PlayerMovePacket playerMovePacket = new PlayerMovePacket();
+                playerMovePacket.setPlayerId(player.getId());
+                playerMovePacket.setX(player.getX());
+                playerMovePacket.setY(player.getY());
+
+                for (Player otherPlayer : getPlayers()) {
+                    if (otherPlayer != player) {
+                        otherPlayer.sendPacket(playerMovePacket);
+                    }
+                }
+
+            }
+
+        }
+
     }
 
     @Override
     public void startGame() {
-
+        // TODO: Should use a new thread for the game instead of combining the game and webserver. We need a better game loop.
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                update();
+            }
+        }, 0, 10);
     }
 
     public void startServer (int port) {
@@ -92,9 +131,69 @@ public class ChristmasGameServer implements GameServer {
 
                 if (response.getId() == PacketTypes.LOGIN_PACKET) {
                     // construct player object
+                    LoginPacket loginPacket = (LoginPacket)response.getPacket();
+                    Player player = new ChristmasGamePlayer(this, messageCtx, loginPacket.getName(), loginPacket.getColorType());
+                    addPlayer(player);
+
+                    GamemodePacket gamemodePacket = new GamemodePacket();
+                    gamemodePacket.setGamemode(Utility.GAMEMODE_PLAYER);    // TODO: If player count == 0, change to spec gamemode
+
+                    MapPacket mapPacket = new MapPacket(); // TODO
+                    player.sendPacket(mapPacket);
+
                     return;
                 }
-                // a player object should exist.
+                Player foundPlayer = null;
+                for (Player p : getPlayers()) {
+                    if (p.getWebSocketContext() == messageCtx) {
+                        foundPlayer = p;
+                        break;
+                    }
+                }
+                final Player player = foundPlayer;
+                if (player == null) {
+                    logger.debug("Client sent packet before logging in.");
+                    return;
+                }
+
+                switch (response.getId()) {
+                    case PacketTypes.START_GAME_PACKET:
+                        if (!gameStarted) {
+                            gameStarted = true;
+                            startGame();
+                            StartGamePacket startGamePacket = new StartGamePacket();
+                            for (Player p : getPlayers()) {
+                                p.sendPacket(startGamePacket);
+                            }
+                        }
+                        break;
+                    case PacketTypes.PLAYER_MOVE_PACKET:
+                        PlayerMovePacket playerMovePacket = (PlayerMovePacket)response.getPacket();
+                        player.setX(playerMovePacket.getX());
+                        player.setY(playerMovePacket.getY());
+
+                        if (player.getY() < 0 && player.isAlive()) {    // TODO: get actual y
+                            player.setAlive(false);
+                            timer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    player.setAlive(true);
+                                }
+                            }, 5000);
+                            return;
+                        }
+
+                        PlayerMovePacket respondingPlayerMovePacket = new PlayerMovePacket();
+                        respondingPlayerMovePacket.setPlayerId(player.getId());
+                        respondingPlayerMovePacket.setX(player.getX());
+                        respondingPlayerMovePacket.setY(player.getY());
+                        for (Player p : getPlayers()) {
+                            if (player != p) {
+                                p.sendPacket(respondingPlayerMovePacket);
+                            }
+                        }
+                        break;
+                }
 
             });
 
