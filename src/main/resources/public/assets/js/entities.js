@@ -27,14 +27,14 @@ game.PlayerEntity = me.Entity.extend({
         if (this.playerId === null) {
 
             me.game.viewport.resize(2500, 1250);    // TODO: Find a better way to resize it. This is a stupid way, but I'm pressed for time.
-            if (me.input.isKeyPressed('right')) {
+            if (me.input.isKeyPressed('right') || game.mobileControls.direction === 1) {
                 this.body.vel.x += this.body.accel.x * me.timer.tick;
-            } else if (me.input.isKeyPressed('left')) {
+            } else if (me.input.isKeyPressed('left') || game.mobileControls.direction === -1) {
                 this.body.vel.x -= this.body.accel.x * me.timer.tick;
             } else {
                 this.body.vel.x = 0;
             }
-            if (me.input.isKeyPressed('up') && !this.body.jumping && !this.body.falling) {
+            if ((me.input.isKeyPressed('up') || game.mobileControls.up) && !this.body.jumping && !this.body.falling) {
                 this.body.vel.y = -this.body.maxVel.y * me.timer.tick;
                 this.body.jumping = true;
             }

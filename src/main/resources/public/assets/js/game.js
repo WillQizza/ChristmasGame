@@ -4,6 +4,11 @@ const game = {
 
     ready: false,
 
+    mobileControls: {
+        up: false,
+        direction: 0
+    },
+
     players: new Map(),
 
     onload: function () {
@@ -31,6 +36,43 @@ const game = {
         me.input.bindKey(me.input.KEY.RIGHT, "right");
         me.input.bindKey(me.input.KEY.UP, "up");
         me.input.bindKey(me.input.KEY.DOWN, "down");
+
+
+        if (mobileCheck()) {
+            GameController.init({
+                left: {
+                    type: "joystick",
+                    joystick: {
+                        max: 500,
+                        radius: 100,
+                        touchEnd: () => game.mobileControls.direction = 0,
+                        touchMove: details => {
+                            if (details.normalizedX > 0) {
+                                game.mobileControls.direction = 1;
+                            } else if (details.normalizedX < 0) {
+                                game.mobileControls.direction = -1;
+                            } else {
+                                game.mobileControls.direction = 0;
+                            }
+                        }
+                    }
+                },
+                right: {
+                    type: "buttons",
+                    buttons: [
+                        {
+                            radius: 100,
+                            label: "Jump",
+                            touchStart: () => game.mobileControls.up = true,
+                            touchEnd: () => game.mobileControls.up = false,
+                            offset: {
+                                y: -70
+                            }
+                        }, false, false, false
+                    ]
+                }
+            });
+        }
 
         me.state.change(me.state.PLAY);
         
@@ -90,7 +132,7 @@ game.PlayScreen = me.Stage.extend({
             }));
         }
         game.ready = true;
-        
+
         me.levelDirector.loadLevel("main_map");
 
         const player = me.pool.pull('playerEntity', 700, 1500, {
