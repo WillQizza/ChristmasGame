@@ -18,6 +18,10 @@ game.PlayerEntity = me.Entity.extend({
             me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH, 0.4);
         }
 
+        this.spawnLocation = {
+            x,
+            y
+        };
 
         this.body.accel.x = this.body.maxVel.x;
 
@@ -49,7 +53,13 @@ game.PlayerEntity = me.Entity.extend({
                 }));
             }
 
+            if (this.pos.y > 2500) {
+                this.pos.x = this.spawnLocation.x;
+                this.pos.y = this.spawnLocation.y;
+            }
+
             this.body.update(dt);
+
             me.collision.check(this);
 
         } else {

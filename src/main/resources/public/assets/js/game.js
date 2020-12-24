@@ -135,7 +135,7 @@ game.PlayScreen = me.Stage.extend({
 
         me.levelDirector.loadLevel("main_map");
 
-        const player = me.pool.pull('playerEntity', 700, 1500, {
+        const player = me.pool.pull('playerEntity', 700, 1300, {
             width: 128,
             height: 128,
             playerId: null
