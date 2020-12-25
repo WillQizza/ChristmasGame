@@ -64,8 +64,11 @@ game.PlayerEntity = me.Entity.extend({
 
         } else {
 
-            this.pos.x = game.players.get(this.playerId).x;
-            this.pos.y = game.players.get(this.playerId).y;
+            if (game.players.has(this.playerId)) {
+                this.pos.x = game.players.get(this.playerId).x;
+                this.pos.y = game.players.get(this.playerId).y;
+            }
+
 
         }
         return (this._super(me.Entity, "update", [dt]) || this.body.vel.x !== 0 || this.body.vel.y !== 0);

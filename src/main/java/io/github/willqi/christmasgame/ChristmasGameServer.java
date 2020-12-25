@@ -147,12 +147,11 @@ public class ChristmasGameServer implements GameServer {
                         player.sendPacket(addPlayerPacket);
                     }
 
-                    addPlayer(player);
-
                     GamemodePacket gamemodePacket = new GamemodePacket();
-                    gamemodePacket.setGamemode(Utility.GAMEMODE_SPECTATOR);
-                    //gamemodePacket.setGamemode(getPlayers().size() == 0 ? Utility.GAMEMODE_SPECTATOR : Utility.GAMEMODE_PLAYER);
+                    gamemodePacket.setGamemode(getPlayers().size() == 0 ? Utility.GAMEMODE_SPECTATOR : Utility.GAMEMODE_PLAYER);
                     player.sendPacket(gamemodePacket);
+
+                    addPlayer(player);
 
                     MapPacket mapPacket = new MapPacket(); // TODO
                     player.sendPacket(mapPacket);

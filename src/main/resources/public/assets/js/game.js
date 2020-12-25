@@ -4,6 +4,11 @@ const game = {
 
     ready: false,
 
+    spectatingData: {
+        enabled: false,
+        farthestPlayer: null
+    },
+
     mobileControls: {
         up: false,
         direction: 0
@@ -101,6 +106,20 @@ game.socket.onmessage = message => {
         case 1:
             game.players.get(wrapper.packet.playerId).x = wrapper.packet.x;
             game.players.get(wrapper.packet.playerId).y = wrapper.packet.y;
+            if (game.spectatingData.enabled) {
+                me.game.viewport.resize(2500, 1250);
+                if (!game.spectatingData.farthestPlayer) {
+                    game.spectatingData.farthestPlayer = game.players.get(wrapper.packet.playerId).entity;
+                    me.game.viewport.follow(game.players.get(wrapper.packet.playerId).entity.pos, me.game.viewport.AXIS.BOTH, 0.4);
+                    return;
+                }
+                if (game.spectatingData.farthestPlayer.playerId !== wrapper.packet.playerId) {
+                    if (game.spectatingData.farthestPlayer.pos.x < wrapper.packet.x) {
+                        me.game.viewport.follow(game.players.get(wrapper.packet.playerId).entity.pos, me.game.viewport.AXIS.BOTH, 0.4);
+                        game.spectatingData.farthestPlayer = game.players.get(wrapper.packet.playerId).entity;
+                    }
+                }
+            }
         break;
         case 4:
             const newPlayer = me.pool.pull('playerEntity', wrapper.packet.x, wrapper.packet.y, {
@@ -112,8 +131,27 @@ game.socket.onmessage = message => {
             me.game.world.addChild(newPlayer);
         break;
         case 5:
+            if (game.spectatingData.enabled && wrapper.packet.playerId === game.spectatingData.farthestPlayer.playerId) {
+                game.spectatingData.farthestPlayer = null;
+            }
             me.game.world.removeChild(game.players.get(wrapper.packet.playerId).entity);
             game.players.delete(wrapper.packet.playerId);
+        break;
+        case 11:
+            
+            if (wrapper.packet.gamemode === 0) {
+                // regular player
+                const player = me.pool.pull('playerEntity', 700, 1300, {
+                    width: 128,
+                    height: 128,
+                    playerId: null
+                });
+                me.game.world.addChild(player);
+            } else {
+                // spectator
+                game.spectatingData.enabled = true;
+            }
+
         break;
     }
 };
@@ -134,13 +172,6 @@ game.PlayScreen = me.Stage.extend({
         game.ready = true;
 
         me.levelDirector.loadLevel("main_map");
-
-        const player = me.pool.pull('playerEntity', 700, 1300, {
-            width: 128,
-            height: 128,
-            playerId: null
-        });
-        me.game.world.addChild(player);
 
 
     },
